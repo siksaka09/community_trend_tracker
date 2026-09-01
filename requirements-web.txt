@@ -1,0 +1,4 @@
+# แพ็กเกจเพิ่มเติมสำหรับ Web Dashboard (ติดตั้งเสริมจาก requirements.txt เดิม)
+# วิธีติดตั้ง: pip install -r requirements.txt -r requirements-web.txt
+streamlit>=1.32.0
+plotly>=5.20.0
