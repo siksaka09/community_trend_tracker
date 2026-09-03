@@ -1,7 +1,8 @@
 """
 หน้าตั้งค่า
 
-- ถ้ารันในเครื่องและมีไฟล์ .env: แก้ไขค่าที่ไม่ใช่ความลับได้ตรงนี้เหมือนเดิม (handles/keywords/filter/limit)
+- ถ้ารันในเครื่องและมีไฟล์ .env: แก้ไขค่าที่ไม่ใช่ความลับได้ตรงนี้เหมือนเดิม
+  (X: handles/keywords/filter/limit, Reddit: search terms/subreddits/limit/เปิดปิด)
 - ถ้า deploy บน Streamlit Community Cloud (ไม่มี .env แต่มี st.secrets): แสดงค่าปัจจุบันแบบอ่านอย่างเดียว
   พร้อมคำแนะนำให้ไปแก้ที่หน้าตั้งค่า secrets ของแอปบน cloud แทน (เพราะเขียนไฟล์บน cloud ฟรีไม่ persistent)
 - ทุกกรณี: มีปุ่มดาวน์โหลด/กู้คืนไฟล์ฐานข้อมูล เพราะพื้นที่เก็บไฟล์บน cloud ฟรีมักไม่ถาวร
@@ -33,15 +34,24 @@ if cloud_mode:
         "มักไม่ถาวร"
     )
     st.subheader("ค่าปัจจุบัน (จาก Secrets)")
+
     col1, col2 = st.columns(2)
     apify_set = bool(st.secrets.get("APIFY_API_TOKEN"))
     anthropic_set = bool(st.secrets.get("ANTHROPIC_API_KEY"))
     col1.metric("APIFY_API_TOKEN", "ตั้งค่าแล้ว ✅" if apify_set else "ยังไม่ได้ตั้งค่า ⚠️")
     col2.metric("ANTHROPIC_API_KEY", "ตั้งค่าแล้ว ✅" if anthropic_set else "ยังไม่ได้ตั้งค่า ⚠️")
-    st.write(f"**TWITTER_HANDLES:** {st.secrets.get('TWITTER_HANDLES', '(ยังไม่ตั้งค่า)')}")
-    st.write(f"**TWITTER_KEYWORDS:** {st.secrets.get('TWITTER_KEYWORDS', '(ยังไม่ตั้งค่า)')}")
-    st.write(f"**FILTER_BY_KEYWORD:** {st.secrets.get('FILTER_BY_KEYWORD', 'false')}")
-    st.write(f"**TWITTER_RESULTS_LIMIT:** {st.secrets.get('TWITTER_RESULTS_LIMIT', '40')}")
+
+    st.markdown("**X (Twitter)**")
+    st.write(f"TWITTER_HANDLES: {st.secrets.get('TWITTER_HANDLES', '(ยังไม่ตั้งค่า)')}")
+    st.write(f"TWITTER_KEYWORDS: {st.secrets.get('TWITTER_KEYWORDS', '(ยังไม่ตั้งค่า)')}")
+    st.write(f"FILTER_BY_KEYWORD: {st.secrets.get('FILTER_BY_KEYWORD', 'false')}")
+    st.write(f"TWITTER_RESULTS_LIMIT: {st.secrets.get('TWITTER_RESULTS_LIMIT', '40')}")
+
+    st.markdown("**Reddit**")
+    st.write(f"ENABLE_REDDIT_SOURCE: {st.secrets.get('ENABLE_REDDIT_SOURCE', 'true')}")
+    st.write(f"REDDIT_SEARCH_TERMS: {st.secrets.get('REDDIT_SEARCH_TERMS', '(ยังไม่ตั้งค่า)')}")
+    st.write(f"REDDIT_SUBREDDITS: {st.secrets.get('REDDIT_SUBREDDITS', '(ยังไม่ตั้งค่า)')}")
+    st.write(f"REDDIT_RESULTS_LIMIT: {st.secrets.get('REDDIT_RESULTS_LIMIT', '40')}")
 
 elif ENV_PATH.exists():
     env_values = dotenv_values(ENV_PATH)
@@ -63,9 +73,10 @@ elif ENV_PATH.exists():
     )
 
     st.divider()
-    st.subheader("การตั้งค่าดึงทวีต")
 
     with st.form("settings_form"):
+        st.subheader("🐦 การตั้งค่าดึงทวีต (X / Twitter)")
+
         handles = st.text_area(
             "TWITTER_HANDLES (คั่นด้วย , ไม่ต้องมี @)",
             value=env_values.get("TWITTER_HANDLES", ""),
@@ -84,7 +95,34 @@ elif ENV_PATH.exists():
             "TWITTER_KEYWORDS (คั่นด้วย , มีผลเฉพาะตอนเปิด FILTER_BY_KEYWORD)",
             value=env_values.get("TWITTER_KEYWORDS", ""),
         )
-        submitted = st.form_submit_button("💾 บันทึกการตั้งค่า")
+
+        st.divider()
+        st.subheader("👽 การตั้งค่าดึงโพสต์ (Reddit)")
+
+        enable_reddit = st.toggle(
+            "ENABLE_REDDIT_SOURCE — เปิดใช้งานแหล่งข้อมูล Reddit",
+            value=str(env_values.get("ENABLE_REDDIT_SOURCE", "true")).strip().lower() in ("1", "true", "yes"),
+            help="ปิดไว้ = ข้ามขั้นตอนดึง Reddit ไปเลยตอนรัน run_all.py หรือกดปุ่มในหน้า Pipeline "
+                 "(ไม่ error แม้ยังไม่ได้ตั้งค่าคีย์เวิร์ด/subreddit)",
+        )
+        reddit_search_terms = st.text_area(
+            "REDDIT_SEARCH_TERMS — คีย์เวิร์ดค้นหาข้ามทั้ง Reddit (คั่นด้วย ,)",
+            value=env_values.get("REDDIT_SEARCH_TERMS", ""),
+            help='ค้นหาแบบข้ามทุก subreddit เช่น "FC27,FC 27,EAFC27,EA FC 27" — ใส่หลายแบบเผื่อคนสะกดไม่เหมือนกัน',
+        )
+        reddit_subreddits = st.text_area(
+            "REDDIT_SUBREDDITS — subreddit ที่รู้จักอยู่แล้ว (คั่นด้วย , ไม่ต้องมี r/)",
+            value=env_values.get("REDDIT_SUBREDDITS", ""),
+            help='เช่น "EASportsFC,FIFA" — ดึงโพสต์ล่าสุดจากชุมชนนี้ตรงๆ (AI จะกรอง relevance ทีหลัง)',
+        )
+        reddit_limit = st.number_input(
+            "REDDIT_RESULTS_LIMIT (จำนวนโพสต์สูงสุดต่อคีย์เวิร์ด/ต่อ subreddit ต่อรอบ)",
+            min_value=1,
+            max_value=1000,
+            value=int(env_values.get("REDDIT_RESULTS_LIMIT") or 40),
+        )
+
+        submitted = st.form_submit_button("💾 บันทึกการตั้งค่า", type="primary")
 
     if submitted:
         updates = {
@@ -92,6 +130,10 @@ elif ENV_PATH.exists():
             "TWITTER_RESULTS_LIMIT": str(int(limit)),
             "FILTER_BY_KEYWORD": "true" if filter_by_keyword else "false",
             "TWITTER_KEYWORDS": keywords.strip(),
+            "ENABLE_REDDIT_SOURCE": "true" if enable_reddit else "false",
+            "REDDIT_SEARCH_TERMS": reddit_search_terms.strip(),
+            "REDDIT_SUBREDDITS": reddit_subreddits.strip(),
+            "REDDIT_RESULTS_LIMIT": str(int(reddit_limit)),
         }
 
         lines = ENV_PATH.read_text(encoding="utf-8").splitlines()

@@ -1,7 +1,7 @@
 """
-หน้าควบคุม pipeline: ดึงทวีต / วิเคราะห์ AI / สรุปเทรนด์
-รันแต่ละสคริปต์เดิม (scrape_x.py / ai_analyze.py / analyze.py / run_all.py) เป็น subprocess แยก
-เพื่อให้เห็น log แบบ real-time โดยไม่ต้องแก้โค้ดสคริปต์เดิมเลย
+หน้าควบคุม pipeline: ดึงทวีต X / ดึงโพสต์ Reddit / วิเคราะห์ AI / สรุปเทรนด์
+รันแต่ละสคริปต์เดิม (scrape_x.py / scrape_reddit.py / ai_analyze.py / analyze.py / run_all.py)
+เป็น subprocess แยก เพื่อให้เห็น log แบบ real-time โดยไม่ต้องแก้โค้ดสคริปต์เดิมเลย
 """
 import subprocess
 import sys
@@ -63,9 +63,19 @@ def run_script(script_name: str, label: str):
 
 
 st.divider()
-st.subheader("1) ดึงทวีตจาก X")
-if st.button("▶️ รัน scrape_x.py"):
-    run_script("scrape_x.py", "ดึงทวีต")
+st.subheader("1) ดึงข้อมูลจากแต่ละแหล่ง")
+
+col_x, col_reddit = st.columns(2)
+with col_x:
+    st.markdown("**X (Twitter)**")
+    if st.button("▶️ รัน scrape_x.py", use_container_width=True):
+        run_script("scrape_x.py", "ดึงทวีต")
+
+with col_reddit:
+    st.markdown("**Reddit**")
+    st.caption("ข้ามอัตโนมัติถ้าปิดไว้ในหน้า Settings หรือยังไม่ได้ตั้งค่าคีย์เวิร์ด/subreddit")
+    if st.button("▶️ รัน scrape_reddit.py", use_container_width=True):
+        run_script("scrape_reddit.py", "ดึงโพสต์ Reddit")
 
 st.subheader("2) วิเคราะห์ AI (relevance / sentiment / หัวข้อ)")
 if st.button("▶️ รัน ai_analyze.py"):
@@ -77,5 +87,6 @@ if st.button("▶️ รัน analyze.py"):
 
 st.divider()
 st.subheader("รันทั้ง pipeline ในคำสั่งเดียว")
+st.caption("ดึงจาก X → ดึงจาก Reddit (ข้ามถ้าปิดไว้) → วิเคราะห์ AI → สรุปเทรนด์")
 if st.button("🚀 รัน run_all.py (ดึง → วิเคราะห์ → สรุป)"):
     run_script("run_all.py", "Pipeline ทั้งหมด")
