@@ -52,9 +52,16 @@ streamlit run app.py
   subprocess แยก แล้วสตรีม log ที่สคริปต์ print ออกมาให้ดูแบบ real-time — ระหว่างที่กำลังรันอยู่
   หน้าเว็บจะค้าง (บล็อก) จนกว่าจะเสร็จ ซึ่งเหมาะกับการใช้งานคนเดียวบนเครื่องตัวเองอยู่แล้ว
   **อย่ากดปุ่มซ้ำระหว่างที่กำลังรัน**
-- **หน้า Settings** แก้ได้เฉพาะ `TWITTER_HANDLES`, `TWITTER_KEYWORDS`, `FILTER_BY_KEYWORD`,
-  `TWITTER_RESULTS_LIMIT` เท่านั้น ส่วน `APIFY_API_TOKEN` และ `ANTHROPIC_API_KEY` ต้องแก้ในไฟล์ `.env`
-  โดยตรง (ตั้งใจไม่ให้แก้ผ่านหน้าเว็บ เพื่อไม่ให้ค่า key/token หลุดไปแสดงบนหน้าจอ)
+- **หน้า Settings** แก้ค่าที่ไม่ใช่ความลับได้ทั้งหมด:
+  - X (Twitter): `TWITTER_HANDLES`, `TWITTER_KEYWORDS`, `FILTER_BY_KEYWORD`, `TWITTER_RESULTS_LIMIT`
+  - Reddit: `ENABLE_REDDIT_SOURCE` (ปุ่มเปิด/ปิดทั้งแหล่งข้อมูล), `REDDIT_SEARCH_TERMS` (คีย์เวิร์ดค้นหา
+    ข้ามทั้ง Reddit), `REDDIT_SUBREDDITS` (community ที่รู้จักอยู่แล้ว), `REDDIT_RESULTS_LIMIT`
+    (จำนวนโพสต์สูงสุดต่อรอบ)
+
+  ส่วน `APIFY_API_TOKEN` และ `ANTHROPIC_API_KEY` ต้องแก้ในไฟล์ `.env` โดยตรง (ตั้งใจไม่ให้แก้ผ่าน
+  หน้าเว็บ เพื่อไม่ให้ค่า key/token หลุดไปแสดงบนหน้าจอ)
+- **หน้า Pipeline** มีปุ่มแยกสำหรับ `scrape_x.py` และ `scrape_reddit.py` — ปุ่ม Reddit จะรันแล้วข้าม
+  แบบไม่ error อัตโนมัติถ้าปิด `ENABLE_REDDIT_SOURCE` ไว้ หรือยังไม่ได้ตั้งค่าคีย์เวิร์ด/subreddit เลย
 - **หน้า Raw Data** ใช้เช็คว่า AI จำแนก `is_relevant` ผิดพลาดหรือไม่ (ตามที่ README เดิมแนะนำให้สุ่มเช็ค)
   แก้ค่าในตารางแล้วกด "บันทึกการแก้ไข" เพื่อเขียนกลับเข้า SQLite
 - ข้อมูลบนหน้า Dashboard/Raw Data ถูก cache ไว้ 30-60 วินาที (`st.cache_data`) ถ้าเพิ่งรัน pipeline เสร็จ
