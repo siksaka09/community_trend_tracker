@@ -53,6 +53,9 @@ ENABLE_REDDIT_SOURCE = "true"
 REDDIT_SEARCH_TERMS = "FC27,FC 27,EAFC27,EA FC 27,EA Sports FC 27"
 REDDIT_SUBREDDITS = "EASportsFC,FIFA"
 REDDIT_RESULTS_LIMIT = "40"
+ENABLE_FACEBOOK_SOURCE = "true"
+FB_PAGE_URLS = "https://www.facebook.com/yourpage,https://www.facebook.com/competitorpage"
+FB_POSTS_PER_PAGE = "30"
 ```
 
 ไม่ต้องแก้โค้ด `scrape_x.py` / `ai_analyze.py` / `analyze.py` เลย — ไฟล์ `secrets_sync.py` ที่แนบมา

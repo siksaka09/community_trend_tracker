@@ -27,8 +27,12 @@ actor ของค่าย apidojo (ทั้ง twitter-scraper-lite และ
 log บรรทัด "ตัวอย่าง field ที่มีในผลลัพธ์ดิบ" ก่อน** ถ้าพบว่า field ไม่ตรงกับที่เดาไว้ ให้ปรับ
 normalize_item() ตามชื่อ field จริงที่เห็น
 """
+import sys
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import os
 import datetime as dt
+
 from dotenv import load_dotenv
 from apify_client import ApifyClient
 

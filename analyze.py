@@ -1,10 +1,12 @@
 """
-สรุปกระแส/เทรนด์เกี่ยวกับเกม EA FC 27 จากข้อมูลที่เก็บไว้ (ดึงมาจาก X/Twitter):
+สรุปกระแส/เทรนด์เกี่ยวกับเกม EA FC 27 จากข้อมูลที่เก็บไว้ (X/Twitter, Reddit, Facebook Pages):
 1. ปริมาณโพสต์ตามเวลา (วันไหนพูดถึงเยอะ) แยกตามบัญชี/แพลตฟอร์ม
 2. สัดส่วน sentiment (positive/negative/neutral/mixed) โดยรวม
 3. หัวข้อที่พูดถึงบ่อยที่สุด (topics)
 4. โพสต์ที่มี engagement สูงสุด (พร้อมสรุปว่าพูดถึงอะไร) — เอาไว้ดูว่าอะไรกำลัง "ไวรัล"
-5. คาดการณ์แนวโน้ม (ให้ Claude ช่วยตีความ) — เทียบสถิติครึ่งแรกกับครึ่งหลังของข้อมูลที่มี
+5-7. (เฉพาะเมื่อมีโพสต์จาก facebook_page) เทียบราคา/โปรโมชั่น/engagement ระหว่างเพจ Facebook
+   — ใช้สำหรับกรณีติดตามเพจร้านค้า เช่น เทียบราคาขายเหรียญเกมระหว่างเพจเรากับคู่แข่ง
+8. คาดการณ์แนวโน้ม (ให้ Claude ช่วยตีความ) — เทียบสถิติครึ่งแรกกับครึ่งหลังของข้อมูลที่มี
    แล้วให้ AI อนุมานว่าถ้าแนวโน้มนี้ดำเนินต่อไป มีสัญญาณอะไรที่ควรจับตา
    **หมายเหตุสำคัญ: นี่คือการอนุมานจากรูปแบบข้อมูล ไม่ใช่การพยากรณ์ที่แม่นยำ** AI ไม่สามารถ
    ทำนายอนาคตได้จริง เป็นเพียงการมองรูปแบบแล้วให้เหตุผลแบบมีตรรกะเท่านั้น ควรใช้ประกอบการตัดสินใจ
@@ -12,6 +14,17 @@
 
 ผลลัพธ์จะพิมพ์ออกหน้าจอ และ export เป็น CSV/Markdown ไว้ที่ data/report_*
 """
+
+import sys
+if sys.platform == "win32":
+    # Windows console บางเครื่องใช้ encoding cp1252 เป็นค่าเริ่มต้น ซึ่งพิมพ์ข้อความไทยไม่ได้
+    # (จะเจอ UnicodeEncodeError) บังคับให้ stdout/stderr เป็น UTF-8 เสมอกันปัญหานี้
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 import os
 import json
 import time
@@ -83,6 +96,90 @@ def top_engagement_posts(df: pd.DataFrame, top_n: int = 20) -> pd.DataFrame:
                         pd.to_numeric(df["comments"], errors="coerce").fillna(0)
     cols = ["platform", "source_name", "posted_at", "summary", "sentiment", "engagement", "post_url"]
     return df.sort_values("engagement", ascending=False)[cols].head(top_n)
+
+
+# ============================================================
+# ส่วนเฉพาะ Facebook Page: เทียบราคา/โปรโมชั่น/engagement ระหว่างเพจ
+# (ใช้ได้เฉพาะโพสต์ platform == "facebook_page" เพราะมีแค่แหล่งนี้ที่มีข้อมูลราคา)
+# ============================================================
+
+def facebook_price_trend(df: pd.DataFrame) -> pd.DataFrame:
+    """แนวโน้มราคาจากโพสต์เพจ Facebook เรียงตามเวลา เทียบข้ามเพจได้"""
+    fb = df[df["platform"] == "facebook_page"]
+    rows = []
+    priced = fb[fb["has_price"] == 1]
+    for _, row in priced.iterrows():
+        try:
+            prices = json.loads(row["price_info"]) if row["price_info"] else []
+        except json.JSONDecodeError:
+            continue
+        for p in prices:
+            rows.append({
+                "page_name": row["source_name"],
+                "posted_at": row["posted_at"],
+                "quantity": p.get("quantity"),
+                "price": p.get("price"),
+                "currency": p.get("currency"),
+                "price_source": row.get("price_source", "text"),
+                "post_url": row["post_url"],
+            })
+    return pd.DataFrame(rows).sort_values(["page_name", "posted_at"]) if rows else pd.DataFrame()
+
+
+def facebook_promotion_summary(df: pd.DataFrame) -> pd.DataFrame:
+    """โปรโมชั่นที่เจอจากโพสต์เพจ Facebook"""
+    fb = df[df["platform"] == "facebook_page"]
+    rows = []
+    for _, row in fb.iterrows():
+        if not row.get("promo_info"):
+            continue
+        try:
+            info = json.loads(row["promo_info"])
+        except json.JSONDecodeError:
+            continue
+        if info.get("has_promotion"):
+            rows.append({
+                "page_name": row["source_name"],
+                "posted_at": row["posted_at"],
+                "promotion_summary": info.get("summary"),
+                "post_url": row["post_url"],
+            })
+    return pd.DataFrame(rows).sort_values(["page_name", "posted_at"]) if rows else pd.DataFrame()
+
+
+def facebook_engagement_comparison(df: pd.DataFrame) -> pd.DataFrame:
+    """เปรียบเทียบ engagement แบบละเอียดต่อโพสต์ระหว่างเพจ Facebook — แยก likes/comments/shares/views
+    ทั้งค่าเฉลี่ยและค่ารวม เพื่อให้เห็นภาพครบทุกมิติ ไม่ใช่แค่ยอดรวมเดียว"""
+    fb = df[df["platform"] == "facebook_page"].copy()
+    if fb.empty:
+        return pd.DataFrame()
+    for col in ["score", "comments", "shares", "views"]:
+        if col not in fb.columns:
+            fb[col] = 0
+        fb[col] = pd.to_numeric(fb[col], errors="coerce").fillna(0)
+
+    summary = fb.groupby("source_name").agg(
+        total_posts=("post_id", "count"),
+        avg_likes=("score", "mean"),
+        avg_comments=("comments", "mean"),
+        avg_shares=("shares", "mean"),
+        avg_views=("views", "mean"),
+        total_likes=("score", "sum"),
+        total_comments=("comments", "sum"),
+        total_shares=("shares", "sum"),
+        total_views=("views", "sum"),
+    ).reset_index()
+
+    for col in ["avg_likes", "avg_comments", "avg_shares", "avg_views"]:
+        summary[col] = summary[col].round(1)
+
+    # engagement รวม = likes+comments+shares เฉลี่ยต่อโพสต์ (ไม่รวม views เพราะเป็นคนละหน่วยวัด
+    # — views คือคนเห็น ไม่ใช่คนมีปฏิสัมพันธ์ เอาไว้ดูแยกต่างหาก)
+    summary["avg_engagement_per_post"] = (
+        summary["avg_likes"] + summary["avg_comments"] + summary["avg_shares"]
+    ).round(1)
+
+    return summary.sort_values("avg_engagement_per_post", ascending=False)
 
 
 # ============================================================
@@ -273,8 +370,40 @@ def main():
     print(top_posts.to_string(index=False))
     top_posts.to_csv(OUT_DIR / "report_top_posts.csv", index=False)
 
+    fb_present = (df["platform"] == "facebook_page").any()
+    if fb_present:
+        print("\n" + "=" * 60)
+        print("5) เทียบราคาระหว่างเพจ Facebook (จากโพสต์ที่ AI วิเคราะห์แล้ว)")
+        print("=" * 60)
+        fb_prices = facebook_price_trend(df)
+        if fb_prices.empty:
+            print("ยังไม่มีข้อมูลราคา — รัน ai_analyze.py ก่อนเพื่อให้ AI ดึงราคาจากข้อความ/รูปภาพโพสต์")
+        else:
+            print(fb_prices.to_string(index=False))
+            fb_prices.to_csv(OUT_DIR / "report_facebook_price_trend.csv", index=False)
+
+        print("\n" + "=" * 60)
+        print("6) โปรโมชั่นที่พบในเพจ Facebook")
+        print("=" * 60)
+        fb_promos = facebook_promotion_summary(df)
+        if fb_promos.empty:
+            print("ยังไม่พบโปรโมชั่น หรือยังไม่ได้รัน ai_analyze.py")
+        else:
+            print(fb_promos.to_string(index=False))
+            fb_promos.to_csv(OUT_DIR / "report_facebook_promotions.csv", index=False)
+
+        print("\n" + "=" * 60)
+        print("7) เปรียบเทียบ Engagement ระหว่างเพจ Facebook")
+        print("=" * 60)
+        fb_engagement = facebook_engagement_comparison(df)
+        if fb_engagement.empty:
+            print("ไม่มีข้อมูล engagement ของ Facebook")
+        else:
+            print(fb_engagement.to_string(index=False))
+            fb_engagement.to_csv(OUT_DIR / "report_facebook_engagement.csv", index=False)
+
     print("\n" + "=" * 60)
-    print("5) คาดการณ์แนวโน้ม (อนุมานจากรูปแบบข้อมูล ไม่ใช่การพยากรณ์ที่แม่นยำ)")
+    print("8) คาดการณ์แนวโน้ม (อนุมานจากรูปแบบข้อมูล ไม่ใช่การพยากรณ์ที่แม่นยำ)")
     print("=" * 60)
     older_df, recent_df, span_days = split_time_windows(df)
     if older_df is None:

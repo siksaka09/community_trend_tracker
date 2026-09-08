@@ -6,9 +6,14 @@ Utility เดียว ใช้ sync ค่าจาก st.secrets (ตอน 
 
 วิธีใช้: import แล้วเรียก sync_secrets_to_env() ก่อนจุดที่ต้องใช้ค่าพวกนี้ (ต้นไฟล์ของแต่ละหน้าก็พอ)
 """
+import sys
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import os
 
 import streamlit as st
+
+
 
 _SECRET_KEYS = [
     "ANTHROPIC_API_KEY",
@@ -21,6 +26,9 @@ _SECRET_KEYS = [
     "REDDIT_SEARCH_TERMS",
     "REDDIT_SUBREDDITS",
     "REDDIT_RESULTS_LIMIT",
+    "ENABLE_FACEBOOK_SOURCE",
+    "FB_PAGE_URLS",
+    "FB_POSTS_PER_PAGE",
 ]
 
 

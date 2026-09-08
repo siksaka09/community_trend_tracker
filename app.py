@@ -4,7 +4,9 @@ Local Web Dashboard สำหรับ Community Trend Tracker (EA FC 27)
 วิธีรัน:
     streamlit run app.py
 
-หน้านี้เป็นหน้าแรก (Dashboard) แสดงภาพรวมเทรนด์จากข้อมูลที่เก็บไว้ใน SQLite
+หน้านี้เป็นหน้าแรก (Dashboard) แสดงภาพรวมเทรนด์จาก X/Reddit ที่เก็บไว้ใน SQLite
+ส่วนการเทียบราคา/โปรโมชั่น/engagement ของเพจ Facebook แยกไปอยู่หน้า pages/5_Facebook_Prices.py
+ต่างหาก (คนละโฟกัสกัน — หน้านี้เน้นกระแส community, หน้า Facebook Prices เน้นเทียบเพจร้านค้า)
 หน้าอื่นๆ (สร้างรายงานคาดการณ์ / ควบคุม pipeline / ตั้งค่า / ดูข้อมูลดิบ) อยู่ในโฟลเดอร์ pages/
 ไม่ได้แก้ตรรกะของ scrape_x.py / ai_analyze.py / analyze.py เลย — หน้านี้แค่อ่านข้อมูลจาก db.py
 """
@@ -26,7 +28,7 @@ FORECAST_FILE = Path(__file__).parent / "data" / "report_trend_forecast.md"
 st.set_page_config(page_title="EA FC 27 Trend Tracker", page_icon="⚽", layout="wide")
 
 st.title("⚽ EA FC 27 — Community Trend Dashboard")
-st.caption("ภาพรวมกระแส/เทรนด์จากทวีต X (Twitter) ที่เก็บไว้ในฐานข้อมูล")
+st.caption("ภาพรวมกระแส/เทรนด์จาก X, Reddit และ Facebook Pages ที่เก็บไว้ในฐานข้อมูล")
 
 
 @st.cache_data(ttl=60)
@@ -45,11 +47,12 @@ if df_all.empty:
     st.stop()
 
 stats = get_summary_stats()
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("โพสต์ทั้งหมด", stats.get("total", 0))
 col2.metric("วิเคราะห์แล้ว", stats.get("analyzed", 0))
 col3.metric("เกี่ยวกับ FC27", stats.get("relevant", 0))
-col4.metric("บัญชีที่ติดตาม", stats.get("accounts", 0))
+col4.metric("บัญชี/เพจที่ติดตาม", stats.get("accounts", 0))
+col5.metric("โพสต์จาก Facebook", stats.get("facebook_posts", 0))
 
 st.divider()
 
@@ -146,6 +149,13 @@ st.dataframe(
         "posted_at": st.column_config.DatetimeColumn("เวลาโพสต์", format="D MMM YYYY, HH:mm"),
     },
 )
+
+# ---------- ชี้ทางไปหน้า Facebook Prices (ถ้ามีข้อมูล) ----------
+fb_df = df[df["platform"] == "facebook_page"]
+if not fb_df.empty:
+    st.divider()
+    st.info(f"📘 มีข้อมูลจากเพจ Facebook {len(fb_df)} โพสต์ — ไปที่หน้า **Facebook Prices** "
+            f"(แถบด้านซ้าย) เพื่อดูเทียบราคา/โปรโมชั่น/engagement แบบละเอียด")
 
 # ---------- คาดการณ์แนวโน้มจาก AI ----------
 st.divider()

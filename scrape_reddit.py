@@ -13,8 +13,12 @@
 ถ้ารันแล้ว error เรื่อง field ไม่ตรง ให้เข้าไปดู "Input" tab ที่หน้า
 https://apify.com/trudax/reddit-scraper-lite/input-schema แล้วปรับ dict ใน run_input ด้านล่าง
 """
+import sys
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import os
 import datetime as dt
+
 from dotenv import load_dotenv
 from apify_client import ApifyClient
 

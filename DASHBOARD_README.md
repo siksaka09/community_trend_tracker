@@ -48,20 +48,25 @@ streamlit run app.py
 
 ## หมายเหตุการใช้งาน
 
-- **หน้า Pipeline** รันสคริปต์เดิม (`scrape_x.py`, `ai_analyze.py`, `analyze.py`, `run_all.py`) เป็น
-  subprocess แยก แล้วสตรีม log ที่สคริปต์ print ออกมาให้ดูแบบ real-time — ระหว่างที่กำลังรันอยู่
-  หน้าเว็บจะค้าง (บล็อก) จนกว่าจะเสร็จ ซึ่งเหมาะกับการใช้งานคนเดียวบนเครื่องตัวเองอยู่แล้ว
-  **อย่ากดปุ่มซ้ำระหว่างที่กำลังรัน**
+- **หน้า Pipeline** รันสคริปต์เดิม (`scrape_x.py`, `scrape_reddit.py`, `scrape_facebook.py`,
+  `ai_analyze.py`, `analyze.py`, `run_all.py`) เป็น subprocess แยก แล้วสตรีม log ที่สคริปต์ print
+  ออกมาให้ดูแบบ real-time — ระหว่างที่กำลังรันอยู่ หน้าเว็บจะค้าง (บล็อก) จนกว่าจะเสร็จ ซึ่งเหมาะกับ
+  การใช้งานคนเดียวบนเครื่องตัวเองอยู่แล้ว **อย่ากดปุ่มซ้ำระหว่างที่กำลังรัน**
 - **หน้า Settings** แก้ค่าที่ไม่ใช่ความลับได้ทั้งหมด:
   - X (Twitter): `TWITTER_HANDLES`, `TWITTER_KEYWORDS`, `FILTER_BY_KEYWORD`, `TWITTER_RESULTS_LIMIT`
   - Reddit: `ENABLE_REDDIT_SOURCE` (ปุ่มเปิด/ปิดทั้งแหล่งข้อมูล), `REDDIT_SEARCH_TERMS` (คีย์เวิร์ดค้นหา
     ข้ามทั้ง Reddit), `REDDIT_SUBREDDITS` (community ที่รู้จักอยู่แล้ว), `REDDIT_RESULTS_LIMIT`
     (จำนวนโพสต์สูงสุดต่อรอบ)
+  - Facebook Pages: `ENABLE_FACEBOOK_SOURCE` (ปุ่มเปิด/ปิดทั้งแหล่งข้อมูล), `FB_PAGE_URLS` (URL เพจ
+    ที่ติดตาม เช่น เพจเราเอง+เพจคู่แข่ง), `FB_POSTS_PER_PAGE` (จำนวนโพสต์สูงสุดต่อเพจต่อรอบ)
+    — ต่างจาก X/Reddit ตรงที่แหล่งนี้ใช้เทียบราคา/โปรโมชั่น/engagement ระหว่างเพจร้านค้าที่รู้จัก
+    ตายตัว ไม่ใช่ตามกระแส community กว้างๆ
 
   ส่วน `APIFY_API_TOKEN` และ `ANTHROPIC_API_KEY` ต้องแก้ในไฟล์ `.env` โดยตรง (ตั้งใจไม่ให้แก้ผ่าน
   หน้าเว็บ เพื่อไม่ให้ค่า key/token หลุดไปแสดงบนหน้าจอ)
-- **หน้า Pipeline** มีปุ่มแยกสำหรับ `scrape_x.py` และ `scrape_reddit.py` — ปุ่ม Reddit จะรันแล้วข้าม
-  แบบไม่ error อัตโนมัติถ้าปิด `ENABLE_REDDIT_SOURCE` ไว้ หรือยังไม่ได้ตั้งค่าคีย์เวิร์ด/subreddit เลย
+- **หน้า Pipeline** มีปุ่มแยกสำหรับ `scrape_x.py`, `scrape_reddit.py`, และ `scrape_facebook.py`
+  — ปุ่ม Reddit/Facebook จะรันแล้วข้ามแบบไม่ error อัตโนมัติถ้าปิด toggle ที่เกี่ยวข้องไว้ หรือยังไม่ได้
+  ตั้งค่าที่จำเป็น (คีย์เวิร์ด/subreddit สำหรับ Reddit, URL เพจสำหรับ Facebook)
 - **หน้า Raw Data** ใช้เช็คว่า AI จำแนก `is_relevant` ผิดพลาดหรือไม่ (ตามที่ README เดิมแนะนำให้สุ่มเช็ค)
   แก้ค่าในตารางแล้วกด "บันทึกการแก้ไข" เพื่อเขียนกลับเข้า SQLite
 - ข้อมูลบนหน้า Dashboard/Raw Data ถูก cache ไว้ 30-60 วินาที (`st.cache_data`) ถ้าเพิ่งรัน pipeline เสร็จ
