@@ -5,7 +5,7 @@ Local Web Dashboard สำหรับ Community Trend Tracker (EA FC 27)
     streamlit run app.py
 
 หน้านี้เป็นหน้าแรก (Dashboard) แสดงภาพรวมเทรนด์จาก X/Reddit ที่เก็บไว้ใน SQLite
-ส่วนการเทียบราคา/โปรโมชั่น/engagement ของเพจ Facebook แยกไปอยู่หน้า pages/5_Facebook_Prices.py
+ส่วนการเทียบราคา/โปรโมชั่น/engagement ของเพจ Facebook แยกไปอยู่หน้า pages/1_Facebook_Prices.py
 ต่างหาก (คนละโฟกัสกัน — หน้านี้เน้นกระแส community, หน้า Facebook Prices เน้นเทียบเพจร้านค้า)
 หน้าอื่นๆ (สร้างรายงานคาดการณ์ / ควบคุม pipeline / ตั้งค่า / ดูข้อมูลดิบ) อยู่ในโฟลเดอร์ pages/
 ไม่ได้แก้ตรรกะของ scrape_x.py / ai_analyze.py / analyze.py เลย — หน้านี้แค่อ่านข้อมูลจาก db.py
